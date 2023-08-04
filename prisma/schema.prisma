@@ -1,0 +1,146 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Follows {
+  id          Int @id @default(autoincrement())
+  followerId  Int
+  followingId Int
+
+  @@index([followerId])
+  @@index([followingId])
+}
+
+model InstagramBookMark {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  userId    Int
+  feedId    Int
+
+  @@index([feedId], map: "feedId")
+  @@index([userId], map: "userId")
+}
+
+model InstagramFeed {
+  id        Int      @id @default(autoincrement())
+  text      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  userId    Int
+  imageUrl  String?
+  views     Int      @default(0)
+
+  @@index([text])
+  @@index([userId], map: "userId")
+}
+
+model InstagramFollows {
+  id          Int @id @default(autoincrement())
+  followerId  Int
+  followingId Int
+
+  @@index([followerId])
+  @@index([followingId])
+}
+
+model InstagramLike {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  userId    Int
+  feedId    Int
+
+  @@index([feedId], map: "feedId")
+  @@index([userId], map: "userId")
+}
+
+model InstagramReply {
+  id        Int      @id @default(autoincrement())
+  text      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  userId    Int
+  feedId    Int
+
+  @@index([feedId], map: "feedId")
+  @@index([userId], map: "userId")
+}
+
+model InstagramUser {
+  id            Int      @id @default(autoincrement())
+  email         String   @unique
+  name          String
+  username      String   @unique
+  password      String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime
+  color         String?
+  avatarUrl     String?
+  backgroundUrl String?
+  isSocialUser  Boolean  @default(false)
+}
+
+model Like {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  userId    Int
+  tweetId   Int
+
+  @@index([tweetId], map: "tweetId")
+  @@index([userId], map: "userId")
+}
+
+model Reply {
+  id        Int      @id @default(autoincrement())
+  text      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  userId    Int
+  tweetId   Int
+
+  @@index([tweetId], map: "tweetId")
+  @@index([userId], map: "userId")
+}
+
+model Tweet {
+  id          Int      @id @default(autoincrement())
+  text        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+  userId      Int
+  createdById Int
+  imageUrl    String?
+  views       Int      @default(0)
+
+  @@index([createdById], map: "createdById")
+  @@index([userId], map: "userId")
+}
+
+model User {
+  id            Int      @id @default(autoincrement())
+  email         String   @unique
+  name          String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime
+  color         String?
+  avatarUrl     String?
+  backgroundUrl String?
+}
+
+model FastUser {
+  id          Int      @id @default(autoincrement())
+  username    String   @unique
+  email       String   @unique
+  password    String
+  imageUrl    String?
+  annualCount Int      @default(15)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+}
