@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import e from 'express';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Controller('user')
@@ -7,6 +8,7 @@ export class UserController {
 
   @Get()
   async findAll() {
+    console.log('findAll');
     return await this.prismaService.prisma.user.findMany();
   }
 
@@ -94,6 +96,144 @@ export class UserController {
     } else {
       return {
         status: 200,
+        msg: 'fail',
+      };
+    }
+  }
+
+  @Post('/event/add')
+  async addEvent(
+    @Body()
+    body: {
+      eventType: 'LEAVE' | 'DUTY';
+      orderState: 'WAITING' | 'APPROVED' | 'REJECTED';
+      startDate: string;
+      endDate: string;
+      count: number;
+    },
+  ) {
+    console.log(body);
+    const user = await this.prismaService.prisma.fastUser.findUnique({
+      where: {
+        id: 1,
+      },
+    });
+
+    const c = user.annualCount - body.count;
+
+    if (c < 0) {
+      return {
+        status: 400,
+        msg: 'fail',
+      };
+    }
+
+    const event = await this.prismaService.prisma.fastEvent.create({
+      data: {
+        type: body.eventType,
+        startDate: body.startDate,
+        endDate: body.endDate,
+        userId: 1,
+      },
+    });
+
+    if (event) {
+      return {
+        status: 201,
+        msg: 'success',
+        data: {
+          event,
+        },
+      };
+    } else {
+      return {
+        status: 401,
+        msg: 'fail',
+      };
+    }
+  }
+
+  @Post('/event/cancel')
+  async cancelEvent(@Body('id') id: number) {
+    console.log(id);
+    const event = await this.prismaService.prisma.fastEvent.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (event) {
+      await this.prismaService.prisma.fastEvent.delete({
+        where: {
+          id: event.id,
+        },
+      });
+
+      return {
+        status: 201,
+        msg: 'success',
+        data: true,
+      };
+    } else {
+      return {
+        status: 400,
+        msg: 'fail',
+      };
+    }
+  }
+
+  @Get('/event/myList')
+  async getMyEventList() {
+    const event = await this.prismaService.prisma.fastEvent.findMany({
+      where: {
+        userId: 1,
+      },
+      include: {
+        user: {
+          select: {
+            username: true,
+            annualCount: true,
+          },
+        },
+      },
+    });
+
+    if (event) {
+      return {
+        status: 200,
+        msg: 'success',
+        data: event,
+      };
+    } else {
+      return {
+        status: 400,
+        msg: 'fail',
+      };
+    }
+  }
+
+  @Get('/event/list')
+  async getEventList() {
+    const event = await this.prismaService.prisma.fastEvent.findMany({
+      include: {
+        user: {
+          select: {
+            username: true,
+            annualCount: true,
+          },
+        },
+      },
+    });
+
+    if (event) {
+      return {
+        status: 200,
+        msg: 'success',
+        data: event,
+      };
+    } else {
+      return {
+        status: 400,
         msg: 'fail',
       };
     }

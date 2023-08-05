@@ -1,146 +1,209 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch", "fullTextIndex"]
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider     = "mysql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
 }
 
-model Follows {
-  id          Int @id @default(autoincrement())
-  followerId  Int
-  followingId Int
-
-  @@index([followerId])
-  @@index([followingId])
-}
-
-model InstagramBookMark {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime
-  userId    Int
-  feedId    Int
-
-  @@index([feedId], map: "feedId")
-  @@index([userId], map: "userId")
-}
-
-model InstagramFeed {
-  id        Int      @id @default(autoincrement())
-  text      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime
-  userId    Int
-  imageUrl  String?
-  views     Int      @default(0)
-
-  @@index([text])
-  @@index([userId], map: "userId")
-}
-
-model InstagramFollows {
-  id          Int @id @default(autoincrement())
-  followerId  Int
-  followingId Int
-
-  @@index([followerId])
-  @@index([followingId])
-}
-
-model InstagramLike {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime
-  userId    Int
-  feedId    Int
-
-  @@index([feedId], map: "feedId")
-  @@index([userId], map: "userId")
-}
-
-model InstagramReply {
-  id        Int      @id @default(autoincrement())
-  text      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime
-  userId    Int
-  feedId    Int
-
-  @@index([feedId], map: "feedId")
-  @@index([userId], map: "userId")
-}
-
-model InstagramUser {
-  id            Int      @id @default(autoincrement())
-  email         String   @unique
+model User {
+  id            Int       @id @default(autoincrement())
+  email         String    @unique
   name          String
-  username      String   @unique
-  password      String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
   color         String?
   avatarUrl     String?
   backgroundUrl String?
-  isSocialUser  Boolean  @default(false)
+  tweets        Tweet[]
+  myTweets      Tweet[]   @relation("myTweets")
+  likes         Like[]
+  replys        Reply[]
+  followers     Follows[] @relation("followers")
+  following     Follows[] @relation("following")
 }
 
-model Like {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime
-  userId    Int
-  tweetId   Int
+model Follows {
+  id          Int  @id @default(autoincrement())
+  follower    User @relation("followers", fields: [followerId], references: [id])
+  followerId  Int
+  following   User @relation("following", fields: [followingId], references: [id])
+  followingId Int
 
-  @@index([tweetId], map: "tweetId")
-  @@index([userId], map: "userId")
-}
-
-model Reply {
-  id        Int      @id @default(autoincrement())
-  text      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime
-  userId    Int
-  tweetId   Int
-
-  @@index([tweetId], map: "tweetId")
-  @@index([userId], map: "userId")
+  @@index([followerId])
+  @@index([followingId])
 }
 
 model Tweet {
   id          Int      @id @default(autoincrement())
   text        String
   createdAt   DateTime @default(now())
-  updatedAt   DateTime
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id])
   userId      Int
+  createdBy   User     @relation("myTweets", fields: [createdById], references: [id])
   createdById Int
   imageUrl    String?
   views       Int      @default(0)
+  likes       Like[]
+  replys      Reply[]
 
-  @@index([createdById], map: "createdById")
-  @@index([userId], map: "userId")
+  @@index([userId], name: "userId")
+  @@index([createdById], name: "createdById")
 }
 
-model User {
-  id            Int      @id @default(autoincrement())
-  email         String   @unique
+model Like {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  tweet     Tweet    @relation(fields: [tweetId], references: [id])
+  tweetId   Int
+
+  @@index([userId], name: "userId")
+  @@index([tweetId], name: "tweetId")
+}
+
+model Reply {
+  id        Int      @id @default(autoincrement())
+  text      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  tweet     Tweet    @relation(fields: [tweetId], references: [id])
+  tweetId   Int
+
+  @@index([userId], name: "userId")
+  @@index([tweetId], name: "tweetId")
+}
+
+// pscale 유료버전 안 쓰기 위해서 같은 디비 사용
+model InstagramUser {
+  id            Int                 @id @default(autoincrement())
+  email         String              @unique
   name          String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime
+  username      String              @unique
+  password      String
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
   color         String?
   avatarUrl     String?
   backgroundUrl String?
+  isSocialUser  Boolean             @default(false)
+  followers     InstagramFollows[]  @relation("followers")
+  following     InstagramFollows[]  @relation("following")
+  feeds         InstagramFeed[]
+  likes         InstagramLike[]
+  replies       InstagramReply[]
+  bookmarks     InstagramBookMark[]
+}
+
+model InstagramFollows {
+  id          Int           @id @default(autoincrement())
+  follower    InstagramUser @relation("followers", fields: [followerId], references: [id])
+  followerId  Int
+  following   InstagramUser @relation("following", fields: [followingId], references: [id])
+  followingId Int
+
+  @@index([followerId])
+  @@index([followingId])
+}
+
+model InstagramFeed {
+  id        Int                 @id @default(autoincrement())
+  text      String
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  user      InstagramUser       @relation(fields: [userId], references: [id])
+  userId    Int
+  imageUrl  String?
+  views     Int                 @default(0)
+  likes     InstagramLike[]
+  replies   InstagramReply[]
+  bookmarks InstagramBookMark[]
+
+  @@index([userId], name: "userId")
+  @@fulltext([text])
+}
+
+model InstagramLike {
+  id        Int           @id @default(autoincrement())
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  user      InstagramUser @relation(fields: [userId], references: [id])
+  userId    Int
+  feed      InstagramFeed @relation(fields: [feedId], references: [id])
+  feedId    Int
+
+  @@index([userId], name: "userId")
+  @@index([feedId], name: "feedId")
+}
+
+model InstagramReply {
+  id        Int           @id @default(autoincrement())
+  text      String
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  user      InstagramUser @relation(fields: [userId], references: [id])
+  userId    Int
+  feed      InstagramFeed @relation(fields: [feedId], references: [id])
+  feedId    Int
+
+  @@index([userId], name: "userId")
+  @@index([feedId], name: "feedId")
+}
+
+model InstagramBookMark {
+  id        Int           @id @default(autoincrement())
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  user      InstagramUser @relation(fields: [userId], references: [id])
+  userId    Int
+  feed      InstagramFeed @relation(fields: [feedId], references: [id])
+  feedId    Int
+
+  @@index([userId], name: "userId")
+  @@index([feedId], name: "feedId")
+}
+
+enum FastEventType {
+  LEAVE
+  DUTY
+}
+
+enum FastOrderState {
+  WAITING
+  APPROVED
+  REJECTED
 }
 
 model FastUser {
-  id          Int      @id @default(autoincrement())
-  username    String   @unique
-  email       String   @unique
+  id          Int         @id @default(autoincrement())
+  username    String      @unique
+  email       String      @unique
   password    String
   imageUrl    String?
-  annualCount Int      @default(15)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime
+  annualCount Int         @default(15)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  events      FastEvent[]
+}
+
+model FastEvent {
+  id         Int            @id @default(autoincrement())
+  type       FastEventType
+  orderState FastOrderState @default(WAITING)
+  startDate  String
+  endDate    String
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  user       FastUser       @relation(fields: [userId], references: [id])
+  userId     Int
+
+  @@index([userId], name: "userId")
 }
